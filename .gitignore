@@ -1,0 +1,27 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userprefs
+*.DotSettings.user
+
+# Compilación
+[Bb]in/
+[Oo]bj/
+[Pp]ublish/
+TestResults/
+*.log
+
+# Otros IDEs / sistema
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Paquetes
+packages/
+*.nupkg
+
+# Configuración local y secretos (NO subir)
+appsettings.Local.json
+secrets.json

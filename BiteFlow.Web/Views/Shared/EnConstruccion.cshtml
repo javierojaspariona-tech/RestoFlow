@@ -1,0 +1,17 @@
+@model EnConstruccionViewModel
+@{
+    ViewData["Title"] = Model.Modulo;
+}
+
+<h1 class="h3">@Model.Modulo</h1>
+<div class="alert alert-info">
+    Pantalla pendiente de desarrollo. Responsable: <strong>@Model.Responsable</strong>.
+</div>
+
+<p class="mb-1">Pendiente de implementar:</p>
+<ul>
+    @foreach (var pendiente in Model.Pendientes)
+    {
+        <li>@pendiente</li>
+    }
+</ul>

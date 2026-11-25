@@ -1,0 +1,17 @@
+@{
+    ViewData["Title"] = "Inicio";
+}
+
+<div class="text-center py-4">
+    <h1 class="display-5">BiteFlow</h1>
+    <p class="lead">Sistema web de gestión de pedidos y ventas para restaurantes (pedidos para llevar).</p>
+
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <p>Hola, <strong>@User.Identity?.Name</strong>. Usa el menú superior para ir a tu módulo.</p>
+    }
+    else
+    {
+        <a class="btn btn-primary" asp-area="Seguridad" asp-controller="Account" asp-action="Login">Iniciar sesión</a>
+    }
+</div>
