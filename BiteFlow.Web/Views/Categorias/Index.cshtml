@@ -1,0 +1,4 @@
+@model IReadOnlyList<Categoria>
+@{ ViewData["Title"]="Categorías"; }
+<div class="d-flex justify-content-between align-items-center mb-3"><h1 class="h3 fw-bold">Categorías</h1><a asp-action="Create" class="btn btn-warning">Nueva categoría</a></div>
+<div class="card table-responsive"><table class="table mb-0"><thead><tr><th>Nombre</th><th>Descripción</th><th>Activo</th><th></th></tr></thead><tbody>@foreach(var c in Model){<tr><td>@c.Nombre</td><td>@c.Descripcion</td><td>@(c.Activo?"Sí":"No")</td><td><form asp-action="Eliminar" method="post"><input type="hidden" name="id" value="@c.IdCategoria"/><button class="btn btn-sm btn-outline-danger" disabled="@(!c.Activo)">Desactivar</button></form></td></tr>}</tbody></table></div>

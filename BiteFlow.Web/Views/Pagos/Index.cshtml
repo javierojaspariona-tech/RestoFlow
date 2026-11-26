@@ -1,0 +1,7 @@
+@model IReadOnlyList<Pedido>
+@{ ViewData["Title"]="Caja y pagos"; }
+<h1 class="h3 fw-bold mb-1">Caja</h1><p class="text-secondary">Pedidos pendientes de cobro.</p>
+<div class="card table-responsive"><table class="table mb-0"><thead><tr><th>Pedido</th><th>Cliente</th><th>Fecha</th><th>Modalidad</th><th>Total</th><th>Registrar pago</th></tr></thead><tbody>
+@foreach(var p in Model){<tr><td>@p.Codigo</td><td>@p.Cliente?.Usuario?.Nombres @p.Cliente?.Usuario?.Apellidos</td><td>@p.FechaPedido.ToString("dd/MM HH:mm")</td><td>@p.Modalidad @(p.NumeroMesa.HasValue?$"· Mesa {p.NumeroMesa}":"")</td><td>S/ @p.Total.ToString("0.00")</td><td><form asp-action="Registrar" method="post" class="d-flex flex-wrap gap-1"><input type="hidden" name="id" value="@p.IdPedido"/><input type="hidden" name="monto" value="@p.Total.ToString(System.Globalization.CultureInfo.InvariantCulture)"/><select name="metodo" class="form-select form-select-sm" style="width:125px"><option value="Efectivo">Efectivo</option><option value="YapePlin">Yape/Plin</option><option value="Tarjeta">Tarjeta</option></select><button class="btn btn-sm btn-warning">Cobrar</button></form></td></tr>}
+</tbody></table></div>
+@if(Model.Count==0){<div class="alert alert-info mt-3">No hay pedidos pendientes.</div>}

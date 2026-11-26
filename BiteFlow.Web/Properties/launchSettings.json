@@ -1,22 +1,12 @@
 {
   "profiles": {
-    "http": {
+    "BiteFlow.Web": {
       "commandName": "Project",
-      "dotnetRunMessages": true,
       "launchBrowser": true,
-      "applicationUrl": "http://localhost:5180",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
-      }
-    },
-    "https": {
-      "commandName": "Project",
-      "dotnetRunMessages": true,
-      "launchBrowser": true,
-      "applicationUrl": "https://localhost:7180;http://localhost:5180",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+      },
+      "applicationUrl": "https://localhost:62141;http://localhost:62142"
     }
   }
 }

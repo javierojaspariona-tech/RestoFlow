@@ -9,7 +9,7 @@
 - [ ] La solución **compila**
 - [ ] Probé mi pantalla en el navegador con el rol correcto
 - [ ] No toqué archivos compartidos (o los mencioné abajo)
-- [ ] Si cambié la BD: actualicé `Database/*.sql` y la entidad/configuración EF
+- [ ] Si cambié la BD: actualicé `BiteFlow.Web/Data/Sp/*.sql` y la modelo y mapeo de AppDbContext
 - [ ] No subí `bin/`, `obj/`, `.vs/` ni cadenas de conexión personales
 
 ## Archivos compartidos modificados (si aplica)

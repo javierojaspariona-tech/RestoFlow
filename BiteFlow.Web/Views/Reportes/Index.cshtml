@@ -1,0 +1,8 @@
+@model PaginaResultado<ReporteVentaDto>
+@{ ViewData["Title"]="Reportes de ventas"; }
+<h1 class="h3 fw-bold mb-3">Reporte de ventas</h1>
+<form method="get" class="card card-body mb-3"><div class="row g-2 align-items-end"><div class="col-md-4"><label class="form-label">Desde</label><input type="date" name="inicio" value="@ViewBag.Inicio" class="form-control"/></div><div class="col-md-4"><label class="form-label">Hasta</label><input type="date" name="fin" value="@ViewBag.Fin" class="form-control"/></div><div class="col-md-4"><button class="btn btn-warning">Filtrar</button></div></div></form>
+<div class="card table-responsive"><table class="table mb-0"><thead><tr><th>Fecha</th><th>Pedido</th><th>Comprobante</th><th>Cajero</th><th>Método</th><th>Monto</th></tr></thead><tbody>
+@foreach(var v in Model.Items){<tr><td>@v.FechaPago.ToString("dd/MM/yyyy HH:mm")</td><td>@v.CodigoPedido</td><td>@v.NumeroComprobante</td><td>@v.Cajero</td><td>@v.MetodoPago</td><td>S/ @v.Monto.ToString("0.00")</td></tr>}
+</tbody></table></div>
+<div class="d-flex justify-content-between mt-3"><span class="text-secondary small">Registros: @Model.TotalRegistros · Página @Model.Pagina de @Math.Max(1,Model.TotalPaginas)</span><div>@if(Model.Pagina>1){<a class="btn btn-sm btn-outline-secondary" href="?inicio=@ViewBag.Inicio&fin=@ViewBag.Fin&pagina=@(Model.Pagina-1)">Anterior</a>} @if(Model.Pagina<Model.TotalPaginas){<a class="btn btn-sm btn-outline-secondary" href="?inicio=@ViewBag.Inicio&fin=@ViewBag.Fin&pagina=@(Model.Pagina+1)">Siguiente</a>}</div></div>

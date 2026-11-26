@@ -1,21 +1,16 @@
-using System.Diagnostics;
-using BiteFlow.Web.Models.ViewModels;
+using BiteFlow.Web.Data;
+using BiteFlow.Web.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 
 namespace BiteFlow.Web.Controllers;
-
-[AllowAnonymous]
 public class HomeController : Controller
 {
-    public IActionResult Index()
-    {
-        return View();
-    }
-
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
-    {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-    }
+    private readonly ProductoRepository _catalogo;
+    public HomeController(ProductoRepository catalogo)=>_catalogo=catalogo;
+    [AllowAnonymous] public IActionResult Index() => Redirect("/index.html");
+    [Authorize(Roles=Roles.Administrador)] public IActionResult Admin()=>View();
+    [ResponseCache(Duration=0,Location=ResponseCacheLocation.None,NoStore=true)]
+    public IActionResult Error()=>View(new ErrorViewModel{RequestId=Activity.Current?.Id??HttpContext.TraceIdentifier});
 }

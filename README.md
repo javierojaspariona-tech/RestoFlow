@@ -1,171 +1,173 @@
-# BiteFlow
+# BiteFlow — Guía del proyecto y división del trabajo
 
-Sistema web de gestión de pedidos y ventas para restaurantes (pedidos para llevar).
-Proyecto del curso **Desarrollo de Servicios Web I** — Computación e Informática, Cibertec.
+## 1. ¿De qué trata BiteFlow?
 
-> **Estado del tronco:** estructura, modelos, servicios base y autenticación inicial.
-> **No se pudo compilar ni ejecutar al generarlo** (el entorno donde se creó no tenía el SDK de .NET ni acceso a NuGet).
-> La primera persona que lo abra debe compilar (`Ctrl+Shift+B`) y avisar de cualquier error antes de que el resto empiece. Ver [Verificación pendiente](#verificación-pendiente).
+BiteFlow es un sistema web para apoyar la gestión de un restaurante. Permite mostrar la carta de productos, armar pedidos desde un carrito y llevar el control de las operaciones principales del negocio, como productos, categorías, usuarios, pagos y reportes.
 
-## 1. Requisitos
+La idea es que cada tipo de usuario pueda realizar las tareas que le corresponden. El cliente consulta la carta y registra sus pedidos; el personal de caja registra los pagos; y el administrador gestiona la información y revisa los resultados del negocio.
 
-| Herramienta | Versión |
-|---|---|
-| Visual Studio 2022 | 17.6 o superior, con la carga de trabajo **ASP.NET y desarrollo web** |
-| .NET SDK | **7.0** (el mismo del proyecto del profesor). Si Visual Studio no lo trae: <https://dotnet.microsoft.com/download/dotnet/7.0> |
-| SQL Server | **LocalDB** (`(localdb)\MSSQLLocalDB`, viene con Visual Studio) o SQL Server Express |
-| Git | Cualquier versión reciente |
+## 2. ¿Qué incluye el proyecto?
 
-Paquetes NuGet (iguales al proyecto del profesor): `Microsoft.EntityFrameworkCore` 7.0.20, `...SqlServer` 7.0.20, `...Tools` 7.0.20, `Microsoft.VisualStudio.Web.CodeGeneration.Design` 7.0.12.
+- **Carta y productos:** muestra los productos disponibles para que el cliente pueda revisar qué ofrece el restaurante.
+- **Categorías:** organiza los productos por grupos para que la carta sea más fácil de consultar.
+- **Carrito:** permite agregar productos, cambiar cantidades, quitar productos y revisar el importe antes de confirmar.
+- **Pedidos:** registra los pedidos del cliente, permite consultar su historial y ver el detalle de cada pedido.
+- **Pagos:** muestra los pedidos pendientes y permite registrar el pago desde el perfil autorizado.
+- **Usuarios y acceso:** contempla el inicio de sesión, el registro de clientes y el acceso según el rol del usuario.
+- **Reportes:** permite consultar información de ventas por fechas y revisar los resultados en páginas.
+- **Administración:** reúne las opciones que utiliza el administrador para gestionar el sistema.
 
-## 2. Cómo ejecutar el proyecto
+## 3. ¿Cómo funciona? (recorrido general)
 
-1. Clona el repositorio y abre **`BiteFlow.sln`** en Visual Studio (se restauran los paquetes solos).
-2. Crea la base de datos. En **Ver > Explorador de objetos de SQL Server > (localdb)\MSSQLLocalDB** (o en SSMS) ejecuta, en este orden:
-   1. `Database/01_schema.sql` — crea la base `BiteFlowDb`, tablas, restricciones e índices.
-   2. `Database/Sp/sp_registrar_pago.sql`
-   3. `Database/Sp/sp_reporte_ventas_paginado.sql`
-   4. `Database/02_seed.sql` — roles, usuarios de prueba, categorías y productos de ejemplo.
-3. Presiona **F5**. Inicia sesión con un usuario de prueba (contraseña de los tres: `Biteflow123*`):
+1. El usuario ingresa a BiteFlow y consulta la carta.
+2. Selecciona los productos que desea y los agrega al carrito.
+3. Revisa las cantidades y confirma el pedido.
+4. El pedido queda registrado para su atención y pago.
+5. El cajero o administrador autorizado consulta los pedidos pendientes y registra el pago.
+6. El administrador puede mantener los productos, categorías y usuarios, además de consultar los reportes de ventas.
 
-| Rol | Correo |
-|---|---|
-| Administrador | `admin@biteflow.local` |
-| Cajero | `cajero@biteflow.local` |
-| Cliente | `cliente@biteflow.local` |
+El acceso a ciertas opciones depende del rol. Por eso, no todos los usuarios ven ni pueden realizar las mismas operaciones.
 
-**Usuarios de prueba solo para desarrollo:** cámbialos o elimínalos antes de la entrega final.
+## 4. Perfiles de usuario
 
-**¿Usas otra instancia de SQL Server?** No edites `appsettings.json`. Click derecho en el proyecto > **Administrar secretos de usuario** y agrega:
+- **Cliente:** se registra o inicia sesión, consulta la carta, utiliza el carrito, confirma pedidos y revisa sus pedidos.
+- **Cajero:** consulta los pedidos pendientes de pago y registra los pagos.
+- **Administrador:** administra productos y categorías, revisa usuarios y consulta los reportes. También tiene acceso a las funciones de administración previstas en el sistema.
 
-```json
-{ "ConnectionStrings": { "DefaultConnection": "Server=.\\SQLEXPRESS;Database=BiteFlowDb;Trusted_Connection=True;TrustServerCertificate=True;" } }
-```
+## 5. Organización del proyecto
 
-## 3. Estructura
+El proyecto está organizado para separar las pantallas de las acciones que las controlan y de la información que se guarda:
 
-```
-BiteFlow/
-├── BiteFlow.sln
-├── README.md
-├── docs/GITHUB.md               Guía de GitHub para los 4 integrantes
-├── .github/                     Plantilla de Pull Request
-├── Database/
-│   ├── 01_schema.sql            Esquema (fuente de verdad de la BD)
-│   ├── 02_seed.sql              Datos iniciales
-│   └── Sp/                      Procedimientos almacenados (uno por archivo)
-└── BiteFlow.Web/
-    ├── Program.cs               Configuración: EF Core, sesión, cookies, roles
-    ├── Common/                  DomainException, ModuloControllerBase
-    ├── Data/                    AppDbContext, Configurations/ (1 por entidad), PagoRepository (ADO.NET + SP)
-    ├── Models/                  Entities/, Enums/, Dtos/, ViewModels/
-    ├── Security/Roles.cs        Constantes de roles
-    ├── Services/                Interfaces/ (contratos), Implementations/, ServiceRegistration.cs
-    ├── Controllers/             HomeController
-    ├── Areas/
-    │   ├── Seguridad/           Javier
-    │   ├── Catalogo/            Valeria
-    │   ├── Pedidos/             Raúl
-    │   └── Caja/                Montaño
-    ├── Views/Shared/            _Layout (menú por rol), EnConstruccion, Error
-    └── wwwroot/                 Bootstrap/jQuery (copiados de la maqueta del profesor)
-```
+- **Controllers:** reciben las acciones realizadas desde la web y coordinan lo que debe suceder. Aquí se encuentran los controladores de acceso, carrito, categorías, pedidos, pagos, productos, reportes y usuarios.
+- **Views:** contienen las pantallas que ve el usuario.
+- **Models:** representan la información que utiliza el sistema, como productos, categorías, pedidos, pagos y usuarios.
+- **Data:** contiene la conexión y el acceso a la base de datos, además de los repositorios que apoyan las operaciones.
+- **Data/Sp:** contiene los scripts SQL para preparar la base de datos y los procedimientos almacenados incluidos en el proyecto.
 
-Cada Area tiene su carpeta `Controllers/` y `Views/`. **Trabaja dentro de tu Area** y los conflictos de Git serán mínimos.
+## 6. Herramientas utilizadas
 
-## 4. Modelo de datos
+- ASP.NET Core MVC con .NET 7.
+- C# para la lógica del sistema.
+- Razor para las vistas.
+- SQL Server para almacenar la información.
+- Entity Framework Core para varias operaciones de acceso a datos.
+- ADO.NET para ejecutar los procedimientos almacenados utilizados por los módulos de pagos y reportes.
+- Visual Studio 2022 como entorno de desarrollo.
 
-`Rol 1─N Usuario` · `Usuario 1─0..1 Cliente` · `Categoria 1─N Producto` · `Cliente 1─N Pedido` · `Pedido 1─N DetallePedido N─1 Producto` · `Pedido 1─0..1 Pago N─1 Usuario(cajero)`
+## 7. ¿Cómo preparar y ejecutar el proyecto?
 
-| Tabla | Claves y restricciones importantes |
-|---|---|
-| Rol | `Nombre` único |
-| Usuario | `Correo` único; `PasswordHash` (PBKDF2); `Activo` |
-| Cliente | `Dni` único (8 dígitos); `IdUsuario` nulo y **único filtrado** (un usuario ↔ un solo cliente, sin duplicados) |
-| Categoria / Producto | `Activo` (eliminación lógica) y `Disponible` (solo Producto). **Sin stock.** `Precio decimal(10,2)`. Producto único por (categoría, nombre) |
-| Pedido | `Estado` (Pendiente, Pagado, Anulado); `Total decimal(10,2)`; `RowVersion` (concurrencia) |
-| DetallePedido | `PrecioUnitario` = **precio histórico** al comprar; único por (pedido, producto) |
-| Pago | `IdPedido` **único** (un pago por pedido); `MetodoPago`; `NumeroComprobante` único (INT-00000001) |
+1. Descargar o clonar el repositorio.
+2. Abrir `BiteFlow.sln` con Visual Studio 2022.
+3. Restaurar los paquetes del proyecto.
+4. Configurar `DefaultConnection` en `BiteFlow.Web/appsettings.json` para que apunte a la instancia de SQL Server que se utilizará.
+5. Preparar la base de datos ejecutando, en este orden, los scripts de `BiteFlow.Web/Data/Sp/`:
+   - `01_schema.sql`
+   - `sp_registrar_pago.sql`
+   - `sp_reporte_ventas_paginado.sql`
+   - `02_seed.sql`
+6. Ejecutar el proyecto `BiteFlow.Web` desde Visual Studio.
 
-Dinero siempre en `DECIMAL(10,2)` / `decimal`. Los estados y métodos de pago se guardan como **texto** (`Pendiente`, `Yape`, ...), con `CHECK` en la BD.
+**Importante sobre los usuarios:** el script `02_seed.sql` no crea usuarios de prueba. Se puede registrar un cliente desde la web. Para probar los perfiles Administrador y Cajero, deben crearse los usuarios correspondientes en SQL con una contraseña almacenada en el formato compatible con `PasswordHasher` del proyecto.
 
-## 5. Reglas ya resueltas en el tronco (no las reimplementes)
+## 8. División del trabajo del equipo
 
-| Regla | Dónde está |
-|---|---|
-| Confirmar pedido = **una transacción** (pedido + detalles). Precios y disponibilidad se leen de la BD, no del carrito | `PedidoService.ConfirmarPedidoAsync` |
-| Precio unitario histórico en el detalle | `Pedido.AgregarDetalle` |
-| Cambios de estado permitidos: Pedido `Pendiente → Pagado/Anulado`; Pago `Registrado → Anulado` | `ReglasDeEstado` + `Pedido.CambiarEstado` |
-| Registrar pago = **una transacción** con bloqueo; valida estado Pendiente, monto, cajero y método | `sp_registrar_pago` (vía `PagoRepository`) |
-| **Sin pagos duplicados** | Índice único `UQ_Pago_IdPedido` + validación en el SP |
-| Anular pedido sin pago, con control de concurrencia | `PedidoService.AnularPedidoAsync` |
-| Reporte de ventas con fechas y paginación | `sp_reporte_ventas_paginado` |
-| Errores de negocio | `DomainException` → mostrar con `TempData["Error"]` |
+La siguiente es una propuesta de división por módulos. El equipo debe colocar los nombres de los responsables y confirmar la asignación antes de empezar. Cada integrante debe trabajar en su parte, probarla y subir sus propios cambios al repositorio.
 
-Si cambias la regla de estados, actualiza **los dos lugares**: `ReglasDeEstado.cs` y `sp_registrar_pago.sql`.
+### Integrante 1 — Productos y categorías
 
-## 6. Contratos entre módulos (`Services/Interfaces`)
+**Objetivo:** mantener la información que aparece en la carta del restaurante.
 
-| Interfaz | Responsable | La usa |
+**Qué debe revisar o completar:**
+- Listar los productos y sus categorías.
+- Registrar productos con su nombre, descripción, precio, imagen y disponibilidad.
+- Crear y administrar categorías.
+- Comprobar que los productos estén asociados a la categoría correcta.
+- Probar que los cambios se reflejen en la carta.
+
+**Carpetas principales:** `Controllers/ProductosController.cs`, `Controllers/CategoriasController.cs`, `Data/`, `Models/`, `Views/Productos/` y `Views/Categorias/`.
+
+### Integrante 2 — Carrito y pedidos
+
+**Objetivo:** revisar el proceso que sigue el cliente desde que elige productos hasta que confirma un pedido.
+
+**Qué debe revisar o completar:**
+- Agregar productos al carrito.
+- Cambiar cantidades, quitar productos y vaciar el carrito.
+- Verificar el cálculo del importe.
+- Confirmar pedidos y guardar sus detalles.
+- Consultar el historial y el detalle de los pedidos del cliente.
+- Probar que un cliente solo pueda consultar sus propios pedidos.
+
+**Carpetas principales:** `Controllers/CarritoController.cs`, `Controllers/PedidosController.cs`, `Data/`, `Models/`, `Views/Carrito/` y `Views/Pedidos/`.
+
+### Integrante 3 — Pagos y comprobantes
+
+**Objetivo:** revisar el registro de los pagos de los pedidos.
+
+**Qué debe revisar o completar:**
+- Mostrar los pedidos pendientes de pago.
+- Registrar el método y el monto del pago.
+- Verificar que el pago corresponda al pedido correcto.
+- Revisar la respuesta del registro y el número de comprobante.
+- Probar los casos de pago correcto y de datos no válidos.
+
+**Carpetas principales:** `Controllers/PagosController.cs`, `Data/PagoRepository.cs`, `Data/Sp/sp_registrar_pago.sql`, `Models/` y `Views/Pagos/`.
+
+### Integrante 4 — Usuarios, acceso y permisos
+
+**Objetivo:** revisar el ingreso al sistema y que cada perfil tenga acceso únicamente a las opciones que le corresponden.
+
+**Qué debe revisar o completar:**
+- Probar el registro de clientes y el inicio y cierre de sesión.
+- Revisar los perfiles Cliente, Cajero y Administrador.
+- Verificar las restricciones de acceso a cada módulo.
+- Revisar el listado y el estado de los usuarios desde administración.
+- Probar accesos permitidos y denegados.
+
+**Carpetas principales:** `Controllers/AccountController.cs`, `Controllers/UsuariosController.cs`, `Data/AuthRepository.cs`, `Data/UsuarioRepository.cs`, `Data/PasswordHasher.cs`, `Models/` y `Views/Account/` y `Views/Usuarios/`.
+
+### Integrante 5 — Administración y reportes (si el equipo tiene cinco integrantes)
+
+**Objetivo:** revisar el panel administrativo y la consulta de resultados de ventas.
+
+**Qué debe revisar o completar:**
+- Verificar el acceso al panel de administración.
+- Consultar reportes por fecha.
+- Revisar los datos mostrados y la paginación.
+- Probar búsquedas con distintos rangos de fechas.
+
+**Carpetas principales:** `Controllers/HomeController.cs`, `Controllers/ReportesController.cs`, `Data/PagoRepository.cs`, `Data/Sp/sp_reporte_ventas_paginado.sql`, `Models/` y `Views/Home/` y `Views/Reportes/`.
+
+> Si el equipo tiene menos integrantes, pueden combinar módulos relacionados. La asignación final debe acordarse entre todos para evitar que dos personas modifiquen la misma parte sin coordinarse.
+
+## 9. Forma de trabajo y entrega de avances
+
+1. Antes de modificar archivos, cada integrante debe actualizar su copia del repositorio.
+2. Debe trabajar principalmente en el módulo que le fue asignado.
+3. Antes de subir cambios, debe ejecutar el proyecto y probar las funciones que modificó.
+4. Debe guardar avances mediante commits con mensajes claros, por ejemplo: `Actualiza gestión de categorías` o `Corrige confirmación de pedidos`.
+5. Debe comunicar al equipo qué archivos modificó y qué pruebas realizó.
+6. Si necesita cambiar algo que afecta a otro módulo, debe coordinarlo con el responsable de esa parte.
+7. Al integrar los cambios, el equipo debe ejecutar el proyecto completo y comprobar el recorrido desde la carta hasta el pedido y el pago.
+
+## 10. ¿Qué debe entregar cada integrante?
+
+Cada responsable debe dejar:
+
+- Su módulo revisado y funcionando según lo solicitado.
+- Los cambios guardados en el repositorio mediante uno o más commits propios.
+- Una breve explicación de qué hizo.
+- Una evidencia de las pruebas realizadas (capturas o demostración).
+- Una lista de los problemas que encontró y, si quedaron pendientes, qué falta resolver.
+
+## 11. Acuerdos del equipo
+
+| Módulo | Responsable | Estado / observaciones |
 |---|---|---|
-| `ICurrentUserService`, `IAuthService`, `IPasswordHasherService`, `IClienteService` | Javier | Todos |
-| `ICatalogoService` (solo lectura) | Valeria | Raúl |
-| `ICarritoService` (sesión JSON), `IPedidoService` | Raúl | Montaño |
-| `IPagoService`, `IReporteVentasService` | Montaño | Caja / Reportes |
+| Productos y categorías | Por asignar | Por revisar |
+| Carrito y pedidos | Por asignar | Por revisar |
+| Pagos y comprobantes | Por asignar | Por revisar |
+| Usuarios y permisos | Por asignar | Por revisar |
+| Administración y reportes | Por asignar / combinar | Por revisar |
 
-Si necesitas **cambiar una interfaz existente**, avisa por el grupo y hazlo en un PR pequeño y aparte: la rompe a los demás.
-
-## 7. Seguridad y roles
-
-- Autenticación por **cookies**. Todo exige sesión iniciada salvo lo marcado con `[AllowAnonymous]` (política por defecto en `Program.cs`).
-- Roles: `Administrador`, `Cajero`, `Cliente` (constantes en `Security/Roles.cs`). Uso: `[Authorize(Roles = Roles.Administrador)]`.
-- Menú por rol en `Views/Shared/_Layout.cshtml`.
-- Los formularios POST llevan `[ValidateAntiForgeryToken]` (los `<form asp-...>` agregan el token solos).
-- Las vistas dentro de un Area usan `/Areas/_ViewStart.cshtml` y `/Areas/_ViewImports.cshtml`.
-
-## 8. Qué falta en cada módulo
-
-Los controladores de ejemplo ya muestran cómo conectar con los servicios. Las pantallas pendientes dicen "En construcción" (helper `EnConstruccion(...)`).
-
-- **Javier — Seguridad:** registro y administración de usuarios, **CRUD de clientes** (no estaba asignado a nadie; se propone aquí porque Cliente se vincula con Usuario), registro de clientes con su usuario, cambio de contraseña, integración general.
-- **Valeria — Catálogo:** CRUD de categorías y productos (desactivar en vez de borrar), control de disponibilidad, `ProductosController.Index` ya lista el catálogo.
-- **Raúl — Pedidos:** agregar al carrito desde el catálogo, cambiar cantidades, quitar, confirmar (resolver el `IdCliente` con `IClienteService.ObtenerPorUsuarioAsync`), mis pedidos y detalle.
-- **Montaño — Caja:** pantalla de cobro con `IPagoService.RegistrarPagoAsync`, comprobante interno imprimible, reporte de ventas con filtros y paginación (`IReporteVentasService`).
-
-## 9. Convenciones
-
-- Namespace = ruta de carpeta (`BiteFlow.Web.Areas.Caja.Controllers`).
-- Cada controlador de Area lleva `[Area("...")]` y hereda de `ModuloControllerBase`.
-- Los formularios usan **ViewModels** (`Models/ViewModels`), no entidades directamente.
-- Servicios nuevos: se registran en **tu** método de `ServiceRegistration.cs` (`AddCatalogoModule`, etc.).
-- Scripts JS propios: `wwwroot/js/<modulo>.js`.
-- Nunca subir `bin/`, `obj/`, `.vs/` ni cadenas de conexión personales (ya están en `.gitignore`).
-
-## 10. Cambios en la base de datos
-
-La BD tiene **una sola fuente de verdad: `Database/01_schema.sql`** (no hay migraciones de EF Core, ver abajo). Para cambiar una tabla:
-1. Edita `01_schema.sql` (con guardas `IF NOT EXISTS`) o agrega un script `Database/NN_cambio_descripcion.sql`.
-2. Actualiza la entidad en `Models/Entities` y su `Data/Configurations/*Configuration.cs`.
-3. Abre un PR que avise a todos para que ejecuten el script.
-
-**Sobre las migraciones:** el tronco se generó sin poder ejecutar `dotnet ef`, así que **no incluye migraciones**. La maqueta del profesor sí las usa; si el curso las exige, Javier puede generarlas en su equipo (`Add-Migration InicialBiteFlow`) sobre una BD vacía, cuidando incluir en la migración el `sp_*`, la secuencia y los índices filtrados (`migrationBuilder.Sql(...)`), y desde ese momento las migraciones reemplazan a `01_schema.sql`. Decídanlo entre los cuatro antes de que alguien cree datos.
-
-## 11. Verificación pendiente
-
-Al generar este tronco **no se compiló ni se ejecutó nada**. Solo se hicieron comprobaciones estáticas: sintaxis de los 60 `.cs` con un analizador (no detecta errores de tipos ni de paquetes), coherencia de nombres entre controladores, vistas, menú, servicios y enums, validez del XML/JSON, formato del hash de contraseñas (calculado y verificado con Python) y un análisis superficial de los SQL con un analizador que no es de SQL Server y **no reconoce todo T-SQL** (no sustituye ejecutarlos). Las vistas Razor no se compilaron. Pendiente de comprobar en Visual Studio:
-
-- [ ] La solución restaura paquetes y **compila**.
-- [ ] Los scripts SQL se ejecutan en orden sin errores en LocalDB.
-- [ ] Login con los tres usuarios de prueba y menú correcto para cada rol.
-- [ ] `/Catalogo/Productos`, `/Pedidos/Carrito`, `/Caja/Pagos` cargan sin errores.
-- [ ] Un pedido de prueba y su pago funcionan (se puede insertar un pedido a mano en SQL para probar `sp_registrar_pago`).
-
-## 12. Problemas frecuentes
-
-| Síntoma | Solución |
-|---|---|
-| `The certificate chain was issued by an authority that is not trusted` | Agrega `TrustServerCertificate=True;` a la cadena de conexión (en secretos de usuario) |
-| `Cannot open database "BiteFlowDb"` | No ejecutaste `01_schema.sql` |
-| `Invalid object name 'dbo.sp_registrar_pago'` | Falta ejecutar los archivos de `Database/Sp/` |
-| Login siempre falla | No ejecutaste `02_seed.sql` (o cambió el formato del hash) |
-| La app pide .NET 7 y no lo encuentra | Instala el SDK 7.0 (ver requisitos) |
+**Nota:** esta guía explica el propósito del sistema y propone cómo organizar el trabajo. No significa que todos los módulos estén terminados al mismo nivel: cada integrante debe revisar el código existente, comprobar su funcionamiento y completar lo que el equipo acuerde.

@@ -1,17 +1,21 @@
-@{
-    ViewData["Title"] = "Inicio";
+@model IReadOnlyList<Producto>
+@{ ViewData["Title"] = "Carta digital"; }
+<section class="hero p-4 p-md-5 mb-4">
+    <div class="row align-items-center"><div class="col-lg-8">
+        <span class="badge text-bg-warning mb-3">Carta digital BiteFlow</span>
+        <h1 class="display-5 fw-bold">Tu próximo antojo está aquí.</h1>
+        <p class="lead text-white-50 mb-0">Explora nuestros platos, bebidas y postres. Agrega tus favoritos al carrito.</p>
+    </div><div class="col-lg-4 text-lg-end mt-3 mt-lg-0"><a class="btn btn-warning btn-lg" asp-controller="Carrito" asp-action="Index"><i class="bi bi-bag me-2"></i>Ver carrito</a></div></div>
+</section>
+<div class="d-flex justify-content-between align-items-center mb-3"><h2 class="h4 fw-bold mb-0">Nuestra carta</h2><span class="text-secondary small">@Model.Count productos disponibles</span></div>
+<div class="row g-4">
+@foreach(var p in Model)
+{
+    <div class="col-sm-6 col-lg-4 col-xl-3"><div class="card h-100 overflow-hidden">
+        @if(!string.IsNullOrWhiteSpace(p.ImagenUrl)){<img src="@p.ImagenUrl" class="card-img-top product-img" alt="@p.Nombre" />}else{<div class="product-img d-flex align-items-center justify-content-center"><i class="bi bi-egg-fried display-3 text-secondary"></i></div>}
+        <div class="card-body d-flex flex-column"><span class="text-secondary small">@p.Categoria?.Nombre</span><h3 class="h5 mt-1">@p.Nombre</h3><p class="text-secondary small flex-grow-1">@p.Descripcion</p>
+            <div class="d-flex justify-content-between align-items-center"><strong class="fs-5">S/ @p.Precio.ToString("0.00")</strong><form asp-controller="Carrito" asp-action="Agregar" method="post"><input type="hidden" name="id" value="@p.IdProducto" /><button class="btn btn-warning btn-sm"><i class="bi bi-plus-lg me-1"></i>Agregar</button></form></div>
+        </div></div></div>
 }
-
-<div class="text-center py-4">
-    <h1 class="display-5">BiteFlow</h1>
-    <p class="lead">Sistema web de gestión de pedidos y ventas para restaurantes (pedidos para llevar).</p>
-
-    @if (User.Identity?.IsAuthenticated == true)
-    {
-        <p>Hola, <strong>@User.Identity?.Name</strong>. Usa el menú superior para ir a tu módulo.</p>
-    }
-    else
-    {
-        <a class="btn btn-primary" asp-area="Seguridad" asp-controller="Account" asp-action="Login">Iniciar sesión</a>
-    }
 </div>
+@if(Model.Count==0){<div class="alert alert-info">Todavía no hay productos disponibles en la carta.</div>}

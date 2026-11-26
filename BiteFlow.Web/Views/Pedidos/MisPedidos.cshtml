@@ -1,0 +1,6 @@
+@model IReadOnlyList<Pedido>
+@{ ViewData["Title"]="Mis pedidos"; }
+<h1 class="h3 fw-bold mb-3">Mis pedidos</h1>
+<div class="card table-responsive"><table class="table mb-0"><thead><tr><th>Código</th><th>Fecha</th><th>Modalidad</th><th>Total</th><th>Estado</th><th></th></tr></thead><tbody>
+@foreach(var p in Model){<tr><td>@p.Codigo</td><td>@p.FechaPedido.ToString("dd/MM/yyyy HH:mm")</td><td>@p.Modalidad @(p.NumeroMesa.HasValue?$"· Mesa {p.NumeroMesa}":"")</td><td>S/ @p.Total.ToString("0.00")</td><td><span class="badge text-bg-secondary">@p.Estado</span></td><td><a asp-action="Detalle" asp-route-id="@p.IdPedido" class="btn btn-sm btn-outline-primary">Ver</a>@if(p.Estado=="Pendiente"){<form asp-action="Anular" method="post" class="d-inline"><input type="hidden" name="id" value="@p.IdPedido"/><button class="btn btn-sm btn-outline-danger">Anular</button></form>}</td></tr>}
+</tbody></table></div>

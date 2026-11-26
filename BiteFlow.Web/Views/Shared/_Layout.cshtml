@@ -1,122 +1,67 @@
-@using System.Security.Claims
-@using BiteFlow.Web.Security
-@{
-    var autenticado = User.Identity?.IsAuthenticated == true;
-    var esAdmin = User.IsInRole(Roles.Administrador);
-    var esCajero = User.IsInRole(Roles.Cajero);
-    var esCliente = User.IsInRole(Roles.Cliente);
-    var rolActual = User.FindFirst(ClaimTypes.Role)?.Value;
-}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - BiteFlow</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">BiteFlow</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal"
-                        aria-controls="menuPrincipal" aria-expanded="false" aria-label="Mostrar menú">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="menuPrincipal">
-                    <ul class="navbar-nav me-auto">
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Inicio</a>
-                        </li>
-                        @if (autenticado)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link" asp-area="Catalogo" asp-controller="Productos" asp-action="Index">Catálogo</a>
-                            </li>
-                        }
-                        @if (esCliente)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link" asp-area="Pedidos" asp-controller="Carrito" asp-action="Index">Carrito</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-area="Pedidos" asp-controller="Pedidos" asp-action="Index">Mis pedidos</a>
-                            </li>
-                        }
-                        @if (esAdmin || esCajero)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link" asp-area="Caja" asp-controller="Pagos" asp-action="Index">Caja</a>
-                            </li>
-                        }
-                        @if (esAdmin)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link" asp-area="Caja" asp-controller="Reportes" asp-action="Index">Reportes</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-area="Catalogo" asp-controller="Categorias" asp-action="Index">Categorías</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-area="Seguridad" asp-controller="Usuarios" asp-action="Index">Usuarios</a>
-                            </li>
-                        }
-                    </ul>
-                    <ul class="navbar-nav align-items-lg-center">
-                        @if (autenticado)
-                        {
-                            <li class="nav-item text-light me-lg-3">
-                                @User.Identity?.Name <span class="badge bg-secondary">@rolActual</span>
-                            </li>
-                            <li class="nav-item">
-                                <form asp-area="Seguridad" asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
-                                    <button type="submit" class="btn btn-outline-light btn-sm">Cerrar sesión</button>
-                                </form>
-                            </li>
-                        }
-                        else
-                        {
-                            <li class="nav-item">
-                                <a class="btn btn-outline-light btn-sm" asp-area="Seguridad" asp-controller="Account" asp-action="Login">Iniciar sesión</a>
-                            </li>
-                        }
-                    </ul>
-                </div>
-            </div>
-        </nav>
-    </header>
-
+<nav class="navbar navbar-expand-lg navbar-dark bf-nav sticky-top">
     <div class="container">
-        <main role="main" class="pb-3">
-            @if (TempData["Mensaje"] is string mensaje)
-            {
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    @mensaje
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-                </div>
-            }
-            @if (TempData["Error"] is string error)
-            {
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    @error
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-                </div>
-            }
-            @RenderBody()
-        </main>
-    </div>
-
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - BiteFlow - Desarrollo de Servicios Web I - Cibertec
+        <a class="navbar-brand fw-bold" asp-controller="Home" asp-action="Index"><i class="bi bi-cup-hot-fill text-warning me-2"></i>Bite<span class="text-warning">Flow</span></a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"><span class="navbar-toggler-icon"></span></button>
+        <div class="collapse navbar-collapse" id="mainNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Index">Carta</a></li>
+                <li class="nav-item"><a class="nav-link" asp-controller="Carrito" asp-action="Index"><i class="bi bi-cart3"></i> Carrito</a></li>
+                @if (User.Identity?.IsAuthenticated == true && User.IsInRole(Roles.Cliente))
+                {
+                    <li class="nav-item"><a class="nav-link" asp-controller="Pedidos" asp-action="MisPedidos">Mis pedidos</a></li>
+                }
+                @if (User.IsInRole(Roles.Administrador))
+                {
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Administración</a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" asp-controller="Home" asp-action="Admin">Panel</a></li>
+                            <li><a class="dropdown-item" asp-controller="Productos" asp-action="Index">Productos</a></li>
+                            <li><a class="dropdown-item" asp-controller="Categorias" asp-action="Index">Categorías</a></li>
+                            <li><a class="dropdown-item" asp-controller="Usuarios" asp-action="Index">Usuarios</a></li>
+                            <li><a class="dropdown-item" asp-controller="Reportes" asp-action="Index">Reportes</a></li>
+                            <li><a class="dropdown-item" asp-controller="Pagos" asp-action="Index">Caja</a></li>
+                        </ul>
+                    </li>
+                }
+                @if (User.IsInRole(Roles.Cajero))
+                {
+                    <li class="nav-item"><a class="nav-link" asp-controller="Pagos" asp-action="Index">Caja</a></li>
+                }
+            </ul>
+            <div class="d-flex align-items-center gap-2">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <span class="text-light small d-none d-md-inline">@User.Identity.Name</span>
+                    <form asp-controller="Account" asp-action="Logout" method="post"><button class="btn btn-sm btn-outline-light">Salir</button></form>
+                }
+                else
+                {
+                    <a class="btn btn-sm btn-outline-light" asp-controller="Account" asp-action="Login">Ingresar</a>
+                    <a class="btn btn-sm btn-warning" asp-controller="Account" asp-action="Register">Crear cuenta</a>
+                }
+            </div>
         </div>
-    </footer>
-
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+    </div>
+</nav>
+<main class="container py-4">
+    @if (TempData["Success"] is string success) { <div class="alert alert-success alert-dismissible fade show">@success<button class="btn-close" data-bs-dismiss="alert"></button></div> }
+    @if (TempData["Error"] is string error) { <div class="alert alert-danger alert-dismissible fade show">@error<button class="btn-close" data-bs-dismiss="alert"></button></div> }
+    @RenderBody()
+</main>
+<footer class="border-top py-4 mt-5 text-center text-secondary small">BiteFlow · Sistema POS y gestión de pedidos</footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

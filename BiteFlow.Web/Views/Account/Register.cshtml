@@ -1,0 +1,12 @@
+@model RegistroClienteViewModel
+@{ ViewData["Title"]="Crear cuenta"; }
+<div class="row justify-content-center"><div class="col-lg-7"><div class="card card-body p-4"><h1 class="h3 fw-bold">Crear cuenta de cliente</h1><p class="text-secondary">Regístrate para confirmar pedidos y consultar tu historial.</p>
+<form method="post"><div asp-validation-summary="ModelOnly" class="text-danger"></div><div class="row g-3">
+<div class="col-md-6"><label asp-for="Nombres" class="form-label"></label><input asp-for="Nombres" class="form-control"/><span asp-validation-for="Nombres" class="text-danger"></span></div>
+<div class="col-md-6"><label asp-for="Apellidos" class="form-label"></label><input asp-for="Apellidos" class="form-control"/><span asp-validation-for="Apellidos" class="text-danger"></span></div>
+<div class="col-md-6"><label asp-for="Correo" class="form-label"></label><input asp-for="Correo" class="form-control"/><span asp-validation-for="Correo" class="text-danger"></span></div>
+<div class="col-md-6"><label asp-for="Password" class="form-label">Contraseña (mínimo 8 caracteres)</label><input asp-for="Password" class="form-control"/><span asp-validation-for="Password" class="text-danger"></span></div>
+<div class="col-md-6"><label asp-for="Telefono" class="form-label"></label><input asp-for="Telefono" class="form-control"/></div>
+<div class="col-md-6"><label asp-for="Direccion" class="form-label"></label><input asp-for="Direccion" class="form-control"/></div>
+</div><button class="btn btn-warning mt-4">Crear cuenta</button></form></div></div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }
