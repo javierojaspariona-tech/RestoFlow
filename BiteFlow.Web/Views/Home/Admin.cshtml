@@ -1,8 +1,35 @@
-@{ ViewData["Title"]="Panel administrativo"; }
-<h1 class="h3 fw-bold mb-4">Panel administrativo</h1>
-<div class="row g-3">
-@foreach(var item in new[]{("Productos","Productos","bi-egg-fried"),("Categorías","Categorias","bi-tags"),("Usuarios","Usuarios","bi-people"),("Caja","Pagos","bi-cash-coin"),("Reportes","Reportes","bi-bar-chart")})
-{
-<div class="col-md-6 col-xl-4"><a class="card card-body text-decoration-none text-dark h-100" asp-controller="@item.Item2" asp-action="Index"><i class="bi @item.Item3 fs-2 text-warning"></i><h2 class="h5 mt-3">@item.Item1</h2><span class="text-secondary small">Abrir módulo <i class="bi bi-arrow-right"></i></span></a></div>
+@{
+    ViewData["Title"] = "Panel administrativo";
+    var modulos = new[]
+    {
+        (Nombre: "Productos",  Controlador: "Productos",  Icono: "bi-egg-fried", Texto: "Platos y bebidas de la carta"),
+        (Nombre: "Categorías", Controlador: "Categorias", Icono: "bi-tags",       Texto: "Organiza la carta"),
+        (Nombre: "Usuarios",   Controlador: "Usuarios",   Icono: "bi-people",     Texto: "Accesos y roles"),
+        (Nombre: "Caja",       Controlador: "Pagos",      Icono: "bi-cash-coin",  Texto: "Cobra pedidos pendientes"),
+        (Nombre: "Reportes",   Controlador: "Reportes",   Icono: "bi-bar-chart",  Texto: "Ventas por fecha")
+    };
 }
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">Panel administrativo</h1>
+        <p class="page-sub">Selecciona un módulo para empezar.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    @foreach (var m in modulos)
+    {
+        <div class="col-md-6 col-xl-4">
+            <a class="card card-body card-link h-100" asp-controller="@m.Controlador" asp-action="Index">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="admin-icon"><i class="bi @m.Icono"></i></span>
+                    <div>
+                        <h2 class="h5 mb-0">@m.Nombre</h2>
+                        <span class="text-secondary small">@m.Texto</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+    }
 </div>

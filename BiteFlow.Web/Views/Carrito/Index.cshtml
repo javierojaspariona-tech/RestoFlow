@@ -1,14 +1,113 @@
 @model List<CarritoItem>
-@{ ViewData["Title"]="Carrito"; var total=Model.Sum(x=>x.Importe); }
-<h1 class="h3 fw-bold mb-3">Tu carrito</h1>
-@if(Model.Count==0){<div class="alert alert-info">Tu carrito está vacío. <a asp-controller="Home" asp-action="Index">Volver a la carta</a>.</div>}
-else{
-<div class="card table-responsive"><table class="table mb-0"><thead><tr><th>Producto</th><th>Precio</th><th>Cantidad</th><th>Importe</th><th></th></tr></thead><tbody>
-@foreach(var i in Model){<tr><td>@i.Nombre</td><td>S/ @i.Precio.ToString("0.00")</td><td><form asp-action="Cantidad" method="post" class="d-flex gap-2"><input type="hidden" name="id" value="@i.IdProducto"/><input type="number" name="cantidad" value="@i.Cantidad" min="0" max="99" class="form-control form-control-sm" style="width:85px"/><button class="btn btn-sm btn-outline-secondary">Actualizar</button></form></td><td>S/ @i.Importe.ToString("0.00")</td><td><form asp-action="Quitar" method="post"><input type="hidden" name="id" value="@i.IdProducto"/><button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></form></td></tr>}
-</tbody></table></div>
-<div class="row justify-content-end mt-3"><div class="col-md-5 col-lg-4"><div class="card card-body"><div class="d-flex justify-content-between"><span>Total (IGV incluido)</span><strong class="fs-4">S/ @total.ToString("0.00")</strong></div>
-@if(User.Identity?.IsAuthenticated==true && User.IsInRole(Roles.Cliente)){
-<form asp-controller="Pedidos" asp-action="Confirmar" method="post" class="mt-3"><label class="form-label">Modalidad</label><select name="Modalidad" id="modalidad" class="form-select mb-2" onchange="document.getElementById('mesaBox').hidden=this.value!=='Mesa'"><option value="ParaLlevar">Para llevar</option><option value="Mesa">En mesa</option></select><div id="mesaBox" hidden class="mb-2"><label class="form-label">Número de mesa</label><input name="NumeroMesa" type="number" min="1" max="99" class="form-control"/></div><label class="form-label">Observación</label><textarea name="Observacion" class="form-control mb-3"></textarea><button class="btn btn-warning w-100">Confirmar pedido</button></form>
-}else{<a asp-controller="Account" asp-action="Login" class="btn btn-warning w-100 mt-3">Inicia sesión para confirmar</a>}
-</div></div></div>
+@{
+    ViewData["Title"] = "Carrito";
+    var total = Model.Sum(x => x.Importe);
+}
+
+<div class="page-head">
+    <h1 class="page-title">Tu carrito</h1>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="card card-body empty-state">
+        <i class="bi bi-bag"></i>
+        <p class="mt-2 mb-3">Tu carrito está vacío.</p>
+        <div><a class="btn btn-brand" asp-controller="Home" asp-action="Index">Ver la carta</a></div>
+    </div>
+}
+else
+{
+    <div class="table-wrap table-responsive">
+        <table class="table">
+            <thead>
+                <tr><th>Producto</th><th>Precio</th><th>Cantidad</th><th>Importe</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var i in Model)
+                {
+                    <tr>
+                        <td class="fw-semibold">@i.Nombre</td>
+                        <td>S/ @i.Precio.ToString("0.00")</td>
+                        <td>
+                            <form asp-action="Cantidad" method="post" class="d-flex gap-2 m-0">
+                                <input type="hidden" name="id" value="@i.IdProducto" />
+                                <input type="number" name="cantidad" value="@i.Cantidad" min="0" max="99" class="form-control form-control-sm qty-input" />
+                                <button class="btn btn-sm btn-line">Actualizar</button>
+                            </form>
+                        </td>
+                        <td class="fw-semibold">S/ @i.Importe.ToString("0.00")</td>
+                        <td class="text-end">
+                            <form asp-action="Quitar" method="post" class="m-0">
+                                <input type="hidden" name="id" value="@i.IdProducto" />
+                                <button class="btn btn-sm btn-line-danger" aria-label="Quitar"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="row justify-content-end mt-4">
+        <div class="col-md-6 col-lg-5 col-xl-4">
+            <div class="card card-body">
+                <div class="total-box d-flex justify-content-between align-items-center">
+                    <span class="small fw-semibold">Total (IGV incluido)</span>
+                    <span class="total-amount">S/ @total.ToString("0.00")</span>
+                </div>
+
+                @if (User.IsInRole(Roles.Administrador) || User.IsInRole(Roles.Cajero))
+                {
+                    <div class="alert mt-3 mb-0 small">Estás con una cuenta del personal. Los pedidos se confirman desde una cuenta de cliente.</div>
+                }
+                else if (User.Identity?.IsAuthenticated == true && User.IsInRole(Roles.Cliente))
+                {
+                    <form asp-controller="Pedidos" asp-action="Confirmar" method="post" class="mt-3" id="formPedido" novalidate>
+                        <label class="form-label" for="modalidad">Modalidad</label>
+                        <select name="Modalidad" id="modalidad" class="form-select mb-3">
+                            <option value="ParaLlevar">Para llevar</option>
+                            <option value="Mesa">En mesa</option>
+                        </select>
+                        <div id="mesaBox" hidden class="mb-3">
+                            <label class="form-label" for="NumeroMesa">Número de mesa</label>
+                            <input name="NumeroMesa" id="NumeroMesa" type="number" min="1" max="99" class="form-control" />
+                            <div class="text-danger small mt-1" id="mesaError" hidden>Indica un número de mesa entre 1 y 99.</div>
+                        </div>
+                        <label class="form-label" for="Observacion">Observación</label>
+                        <textarea name="Observacion" id="Observacion" rows="2" maxlength="300" class="form-control mb-3"></textarea>
+                        <button class="btn btn-brand w-100">Confirmar pedido</button>
+                    </form>
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="Login" class="btn btn-brand w-100 mt-3">Inicia sesión para confirmar</a>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        var m = document.getElementById('modalidad');
+        var box = document.getElementById('mesaBox');
+        var mesa = document.getElementById('NumeroMesa');
+        var form = document.getElementById('formPedido');
+        if (m) m.addEventListener('change', function () {
+            var esMesa = this.value === 'Mesa';
+            box.hidden = !esMesa;
+            if (!esMesa) { mesa.value = ''; document.getElementById('mesaError').hidden = true; mesa.classList.remove('input-validation-error'); }
+        });
+        if (form) form.addEventListener('submit', function (e) {
+            if (m.value !== 'Mesa') return;
+            var n = parseInt(mesa.value, 10);
+            if (isNaN(n) || n < 1 || n > 99) {
+                e.preventDefault();
+                document.getElementById('mesaError').hidden = false;
+                mesa.classList.add('input-validation-error');
+                mesa.focus();
+            }
+        });
+    </script>
 }

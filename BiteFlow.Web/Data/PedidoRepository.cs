@@ -24,5 +24,6 @@ public class PedidoRepository
     public async Task<IReadOnlyList<Pedido>> MisPedidosAsync(int id,CancellationToken ct=default)=>await _db.Pedidos.Include(x=>x.Detalles).Where(x=>x.IdCliente==id).OrderByDescending(x=>x.FechaPedido).ToListAsync(ct);
     public Task<Pedido?> ObtenerAsync(long id,CancellationToken ct=default)=>_db.Pedidos.Include(x=>x.Detalles).Include(x=>x.Pago).FirstOrDefaultAsync(x=>x.IdPedido==id,ct);
     public async Task AnularAsync(long id,int cliente,CancellationToken ct=default){var p=await _db.Pedidos.FirstOrDefaultAsync(x=>x.IdPedido==id&&x.IdCliente==cliente,ct)??throw new InvalidOperationException("Pedido no encontrado.");if(p.Estado!="Pendiente")throw new InvalidOperationException("Solo se pueden anular pedidos pendientes.");p.Estado="Anulado";await _db.SaveChangesAsync(ct);}
-    public async Task<IReadOnlyList<Pedido>> PendientesAsync(CancellationToken ct=default)=>await _db.Pedidos.Include(x=>x.Cliente)!.ThenInclude(x=>x!.Usuario).Where(x=>x.Estado=="Pendiente").OrderBy(x=>x.FechaPedido).ToListAsync(ct);
+    public async Task<IReadOnlyList<Pedido>> PendientesAsync(CancellationToken ct=default)=>await _db.Pedidos.Include(x=>x.Detalles).Include(x=>x.Cliente)!.ThenInclude(x=>x!.Usuario).Where(x=>x.Estado=="Pendiente").OrderBy(x=>x.FechaPedido).ToListAsync(ct);
+    public Task<Pedido?> ComprobanteAsync(long id,CancellationToken ct=default)=>_db.Pedidos.Include(x=>x.Detalles).Include(x=>x.Pago).Include(x=>x.Cliente)!.ThenInclude(x=>x!.Usuario).FirstOrDefaultAsync(x=>x.IdPedido==id,ct);
 }

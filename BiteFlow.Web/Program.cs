@@ -3,7 +3,20 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    var m = options.ModelBindingMessageProvider;
+    m.SetValueMustNotBeNullAccessor(_ => "Este campo es obligatorio.");
+    m.SetMissingBindRequiredValueAccessor(f => $"Falta el valor de {f}.");
+    m.SetMissingKeyOrValueAccessor(() => "Falta un valor.");
+    m.SetAttemptedValueIsInvalidAccessor((v, f) => $"'{v}' no es un valor válido para {f}.");
+    m.SetNonPropertyAttemptedValueIsInvalidAccessor(v => $"'{v}' no es un valor válido.");
+    m.SetUnknownValueIsInvalidAccessor(f => $"El valor de {f} no es válido.");
+    m.SetNonPropertyUnknownValueIsInvalidAccessor(() => "El valor no es válido.");
+    m.SetValueIsInvalidAccessor(v => $"'{v}' no es válido.");
+    m.SetValueMustBeANumberAccessor(f => $"{f} debe ser un número (usa punto para decimales).");
+    m.SetNonPropertyValueMustBeANumberAccessor(() => "Debe ser un número.");
+});
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddDistributedMemoryCache();

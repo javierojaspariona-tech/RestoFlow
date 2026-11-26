@@ -1,6 +1,45 @@
 @model IReadOnlyList<Pedido>
-@{ ViewData["Title"]="Mis pedidos"; }
-<h1 class="h3 fw-bold mb-3">Mis pedidos</h1>
-<div class="card table-responsive"><table class="table mb-0"><thead><tr><th>Código</th><th>Fecha</th><th>Modalidad</th><th>Total</th><th>Estado</th><th></th></tr></thead><tbody>
-@foreach(var p in Model){<tr><td>@p.Codigo</td><td>@p.FechaPedido.ToString("dd/MM/yyyy HH:mm")</td><td>@p.Modalidad @(p.NumeroMesa.HasValue?$"· Mesa {p.NumeroMesa}":"")</td><td>S/ @p.Total.ToString("0.00")</td><td><span class="badge text-bg-secondary">@p.Estado</span></td><td><a asp-action="Detalle" asp-route-id="@p.IdPedido" class="btn btn-sm btn-outline-primary">Ver</a>@if(p.Estado=="Pendiente"){<form asp-action="Anular" method="post" class="d-inline"><input type="hidden" name="id" value="@p.IdPedido"/><button class="btn btn-sm btn-outline-danger">Anular</button></form>}</td></tr>}
-</tbody></table></div>
+@{ ViewData["Title"] = "Mis pedidos"; }
+
+<div class="page-head"><h1 class="page-title">Mis pedidos</h1></div>
+
+@if (Model.Count == 0)
+{
+    <div class="card card-body empty-state">
+        <i class="bi bi-receipt"></i>
+        <p class="mt-2 mb-3">Aún no has hecho ningún pedido.</p>
+        <div><a class="btn btn-brand" asp-controller="Home" asp-action="Index">Ver la carta</a></div>
+    </div>
+}
+else
+{
+    <div class="table-wrap table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Código</th><th>Fecha</th><th>Modalidad</th><th>Total</th><th>Estado</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td class="fw-semibold">@p.Codigo</td>
+                        <td>@p.FechaPedido.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@p.Modalidad @(p.NumeroMesa.HasValue ? $"· Mesa {p.NumeroMesa}" : "")</td>
+                        <td class="fw-semibold">S/ @p.Total.ToString("0.00")</td>
+                        <td><span class="badge-estado est-@((p.Estado ?? "").ToLowerInvariant())">@p.Estado</span></td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-2">
+                                <a asp-action="Detalle" asp-route-id="@p.IdPedido" class="btn btn-sm btn-line">Ver</a>
+                                @if (p.Estado == "Pendiente")
+                                {
+                                    <form asp-action="Anular" method="post" class="m-0">
+                                        <input type="hidden" name="id" value="@p.IdPedido" />
+                                        <button class="btn btn-sm btn-line-danger">Anular</button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

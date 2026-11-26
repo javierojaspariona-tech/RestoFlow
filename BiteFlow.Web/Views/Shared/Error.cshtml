@@ -1,3 +1,9 @@
 @model ErrorViewModel
 @{ ViewData["Title"] = "Error"; }
-<div class="alert alert-danger"><h1 class="h4">Ocurrió un error.</h1><p>No se pudo completar la solicitud.</p>@if(Model.ShowRequestId){<small>Solicitud: @Model.RequestId</small>}</div>
+<div class="card card-body empty-state mx-auto" style="max-width:520px">
+    <i class="bi bi-exclamation-triangle"></i>
+    <h1 class="h3 mt-3">Ocurrió un error</h1>
+    <p class="text-secondary">No se pudo completar la solicitud. Intenta de nuevo.</p>
+    @if (Model.ShowRequestId) { <small class="text-secondary d-block mb-3">Solicitud: @Model.RequestId</small> }
+    <div><a asp-controller="Home" asp-action="Index" class="btn btn-brand">Volver a la carta</a></div>
+</div>

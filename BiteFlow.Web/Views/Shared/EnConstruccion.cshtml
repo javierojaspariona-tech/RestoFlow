@@ -1,17 +1,10 @@
 @model EnConstruccionViewModel
-@{
-    ViewData["Title"] = Model.Modulo;
-}
-
-<h1 class="h3">@Model.Modulo</h1>
-<div class="alert alert-info">
-    Pantalla pendiente de desarrollo. Responsable: <strong>@Model.Responsable</strong>.
+@{ ViewData["Title"] = Model.Modulo; }
+<div class="page-head"><h1 class="page-title">@Model.Modulo</h1></div>
+<div class="card card-body p-4">
+    <div class="alert mb-3">Pantalla pendiente de desarrollo. Responsable: <strong>@Model.Responsable</strong>.</div>
+    <p class="mb-1 fw-semibold">Pendiente de implementar:</p>
+    <ul class="mb-0">
+        @foreach (var pendiente in Model.Pendientes) { <li>@pendiente</li> }
+    </ul>
 </div>
-
-<p class="mb-1">Pendiente de implementar:</p>
-<ul>
-    @foreach (var pendiente in Model.Pendientes)
-    {
-        <li>@pendiente</li>
-    }
-</ul>

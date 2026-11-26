@@ -9,7 +9,7 @@ public class HomeController : Controller
 {
     private readonly ProductoRepository _catalogo;
     public HomeController(ProductoRepository catalogo)=>_catalogo=catalogo;
-    [AllowAnonymous] public IActionResult Index() => Redirect("/index.html");
+    [AllowAnonymous] public async Task<IActionResult> Index(CancellationToken ct) => View(await _catalogo.ProductosPublicosAsync(ct));
     [Authorize(Roles=Roles.Administrador)] public IActionResult Admin()=>View();
     [ResponseCache(Duration=0,Location=ResponseCacheLocation.None,NoStore=true)]
     public IActionResult Error()=>View(new ErrorViewModel{RequestId=Activity.Current?.Id??HttpContext.TraceIdentifier});

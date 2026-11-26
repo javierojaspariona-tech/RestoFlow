@@ -1,3 +1,19 @@
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+<script>
+    // Mensajes por defecto de jQuery Validate en español (los de los modelos ya vienen en español)
+    $.extend($.validator.messages, {
+        required: "Este campo es obligatorio.",
+        email: "Ingresa un correo válido.",
+        number: "Ingresa un número válido.",
+        digits: "Ingresa solo dígitos.",
+        url: "Ingresa una URL válida.",
+        min: $.validator.format("Debe ser mayor o igual a {0}."),
+        max: $.validator.format("Debe ser menor o igual a {0}."),
+        range: $.validator.format("Debe estar entre {0} y {1}."),
+        minlength: $.validator.format("Mínimo {0} caracteres."),
+        maxlength: $.validator.format("Máximo {0} caracteres."),
+        equalTo: "Los valores no coinciden."
+    });
+</script>

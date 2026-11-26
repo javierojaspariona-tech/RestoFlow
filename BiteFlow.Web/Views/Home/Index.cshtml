@@ -1,21 +1,123 @@
 @model IReadOnlyList<Producto>
-@{ ViewData["Title"] = "Carta digital"; }
-<section class="hero p-4 p-md-5 mb-4">
-    <div class="row align-items-center"><div class="col-lg-8">
-        <span class="badge text-bg-warning mb-3">Carta digital BiteFlow</span>
-        <h1 class="display-5 fw-bold">Tu próximo antojo está aquí.</h1>
-        <p class="lead text-white-50 mb-0">Explora nuestros platos, bebidas y postres. Agrega tus favoritos al carrito.</p>
-    </div><div class="col-lg-4 text-lg-end mt-3 mt-lg-0"><a class="btn btn-warning btn-lg" asp-controller="Carrito" asp-action="Index"><i class="bi bi-bag me-2"></i>Ver carrito</a></div></div>
-</section>
-<div class="d-flex justify-content-between align-items-center mb-3"><h2 class="h4 fw-bold mb-0">Nuestra carta</h2><span class="text-secondary small">@Model.Count productos disponibles</span></div>
-<div class="row g-4">
-@foreach(var p in Model)
-{
-    <div class="col-sm-6 col-lg-4 col-xl-3"><div class="card h-100 overflow-hidden">
-        @if(!string.IsNullOrWhiteSpace(p.ImagenUrl)){<img src="@p.ImagenUrl" class="card-img-top product-img" alt="@p.Nombre" />}else{<div class="product-img d-flex align-items-center justify-content-center"><i class="bi bi-egg-fried display-3 text-secondary"></i></div>}
-        <div class="card-body d-flex flex-column"><span class="text-secondary small">@p.Categoria?.Nombre</span><h3 class="h5 mt-1">@p.Nombre</h3><p class="text-secondary small flex-grow-1">@p.Descripcion</p>
-            <div class="d-flex justify-content-between align-items-center"><strong class="fs-5">S/ @p.Precio.ToString("0.00")</strong><form asp-controller="Carrito" asp-action="Agregar" method="post"><input type="hidden" name="id" value="@p.IdProducto" /><button class="btn btn-warning btn-sm"><i class="bi bi-plus-lg me-1"></i>Agregar</button></form></div>
-        </div></div></div>
+@{
+    ViewData["Title"] = "Carta digital";
+    var categorias = Model.Select(p => p.Categoria?.Nombre).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().ToList();
+    // Solo los clientes (o visitantes) pueden pedir; admin y cajero ven la carta sin botón de compra
+    var puedePedir = !(User.IsInRole(Roles.Administrador) || User.IsInRole(Roles.Cajero));
 }
+
+<section class="hero mb-5">
+    <div class="hero-body">
+        <span class="hero-sticker">Carta digital</span>
+        <h1>Tu próximo antojo<br />está aquí</h1>
+        <p class="mb-4">Elige tus platos, bebidas y postres favoritos y pídelos en minutos.</p>
+        <a class="btn btn-brand btn-lg" asp-controller="Carrito" asp-action="Index"><i class="bi bi-bag me-2"></i>Ver carrito</a>
+    </div>
+    <div class="hero-check"></div>
+</section>
+
+<div class="page-head">
+    <div>
+        <h2 class="page-title">Nuestra carta</h2>
+        <p class="page-sub"><span id="contador">@Model.Count</span> productos disponibles</p>
+    </div>
+    @if (Model.Count > 0)
+    {
+        <div class="search-box">
+            <i class="bi bi-search"></i>
+            <input type="search" id="buscar" class="form-control" placeholder="Buscar plato o bebida..." aria-label="Buscar en la carta" />
+        </div>
+    }
 </div>
-@if(Model.Count==0){<div class="alert alert-info">Todavía no hay productos disponibles en la carta.</div>}
+@if (categorias.Count > 1)
+{
+    <div class="d-flex flex-wrap gap-2 mb-4" id="filtros">
+        <button type="button" class="chip active" data-cat="">Todo</button>
+        @foreach (var c in categorias)
+        {
+            <button type="button" class="chip" data-cat="@c">@c</button>
+        }
+    </div>
+}
+
+@if (Model.Count == 0)
+{
+    <div class="card card-body empty-state">
+        <i class="bi bi-egg-fried"></i>
+        <p class="mb-0 mt-2">Todavía no hay productos disponibles en la carta.</p>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var p in Model)
+        {
+            <div class="col-sm-6 col-lg-4 col-xl-3 item" data-cat="@p.Categoria?.Nombre" data-nombre="@((p.Nombre + " " + p.Descripcion).ToLowerInvariant())">
+                <div class="card product-card h-100">
+                    @if (!string.IsNullOrWhiteSpace(p.ImagenUrl))
+                    {
+                        <img src="@p.ImagenUrl" class="product-img" alt="@p.Nombre" loading="lazy" />
+                    }
+                    else
+                    {
+                        <div class="product-img product-img-ph"><i class="bi bi-egg-fried"></i></div>
+                    }
+                    <div class="card-body d-flex flex-column">
+                        @if (!string.IsNullOrWhiteSpace(p.Categoria?.Nombre))
+                        {
+                            <span class="pill align-self-start mb-2">@p.Categoria!.Nombre</span>
+                        }
+                        <h3 class="h5 mb-1">@p.Nombre</h3>
+                        <p class="text-secondary small flex-grow-1">@p.Descripcion</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="price">S/ @p.Precio.ToString("0.00")</span>
+                            @if (puedePedir)
+                            {
+                                <form asp-controller="Carrito" asp-action="Agregar" method="post" class="m-0">
+                                    <input type="hidden" name="id" value="@p.IdProducto" />
+                                    <input type="hidden" name="volver" value="carta" />
+                                    <button class="btn btn-brand btn-sm"><i class="bi bi-plus-lg me-1"></i>Agregar</button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    <div id="sinResultados" class="card card-body empty-state mt-4" hidden>
+        <i class="bi bi-search"></i>
+        <p class="mb-0 mt-2">No encontramos productos con ese filtro.</p>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var cat = '', q = '';
+            var items = document.querySelectorAll('.item');
+            var contador = document.getElementById('contador');
+            var vacio = document.getElementById('sinResultados');
+            function aplicar() {
+                var visibles = 0;
+                items.forEach(function (el) {
+                    var ok = (cat === '' || el.dataset.cat === cat) && (q === '' || el.dataset.nombre.indexOf(q) !== -1);
+                    el.hidden = !ok;
+                    if (ok) visibles++;
+                });
+                if (contador) contador.textContent = visibles;
+                if (vacio) vacio.hidden = visibles !== 0;
+            }
+            document.querySelectorAll('#filtros .chip').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('#filtros .chip').forEach(function (b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+                    cat = btn.dataset.cat;
+                    aplicar();
+                });
+            });
+            var buscar = document.getElementById('buscar');
+            if (buscar) buscar.addEventListener('input', function () { q = this.value.trim().toLowerCase(); aplicar(); });
+        })();
+    </script>
+}

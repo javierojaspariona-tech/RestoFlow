@@ -1,7 +1,400 @@
 @model IReadOnlyList<Pedido>
-@{ ViewData["Title"]="Caja y pagos"; }
-<h1 class="h3 fw-bold mb-1">Caja</h1><p class="text-secondary">Pedidos pendientes de cobro.</p>
-<div class="card table-responsive"><table class="table mb-0"><thead><tr><th>Pedido</th><th>Cliente</th><th>Fecha</th><th>Modalidad</th><th>Total</th><th>Registrar pago</th></tr></thead><tbody>
-@foreach(var p in Model){<tr><td>@p.Codigo</td><td>@p.Cliente?.Usuario?.Nombres @p.Cliente?.Usuario?.Apellidos</td><td>@p.FechaPedido.ToString("dd/MM HH:mm")</td><td>@p.Modalidad @(p.NumeroMesa.HasValue?$"· Mesa {p.NumeroMesa}":"")</td><td>S/ @p.Total.ToString("0.00")</td><td><form asp-action="Registrar" method="post" class="d-flex flex-wrap gap-1"><input type="hidden" name="id" value="@p.IdPedido"/><input type="hidden" name="monto" value="@p.Total.ToString(System.Globalization.CultureInfo.InvariantCulture)"/><select name="metodo" class="form-select form-select-sm" style="width:125px"><option value="Efectivo">Efectivo</option><option value="YapePlin">Yape/Plin</option><option value="Tarjeta">Tarjeta</option></select><button class="btn btn-sm btn-warning">Cobrar</button></form></td></tr>}
-</tbody></table></div>
-@if(Model.Count==0){<div class="alert alert-info mt-3">No hay pedidos pendientes.</div>}
+@using System.Globalization
+@using System.Text.Json
+@using Microsoft.EntityFrameworkCore
+@inject BiteFlow.Web.Data.AppDbContext Db
+@{
+    ViewData["Title"] = "Caja y pagos";
+    var inv = CultureInfo.InvariantCulture;
+    var comp = ViewBag.Comprobante as Pedido;
+
+    // ---- Historial de comprobantes emitidos (filtros por GET) ----
+    var hoy = DateTime.Today;
+    DateTime.TryParse(Context.Request.Query["fi"], out var fIni);
+    DateTime.TryParse(Context.Request.Query["ff"], out var fFin);
+    if (fIni == default) fIni = new DateTime(hoy.Year, hoy.Month, 1);
+    if (fFin == default) fFin = hoy;
+    var fMetodo = (string?)Context.Request.Query["metodo"] ?? "";
+    var fin1 = fFin.Date.AddDays(1);
+    var hq = Db.Pedidos.AsNoTracking()
+        .Include(x => x.Detalles).Include(x => x.Pago).Include(x => x.Cliente)!.ThenInclude(c => c!.Usuario)
+        .Where(x => x.Pago != null && x.Pago.FechaPago >= fIni.Date && x.Pago.FechaPago < fin1);
+    if (!string.IsNullOrEmpty(fMetodo)) hq = hq.Where(x => x.Pago!.MetodoPago == fMetodo);
+    var historial = await hq.OrderByDescending(x => x.Pago!.FechaPago).Take(200).ToListAsync();
+    var totalFiltro = historial.Sum(x => x.Pago!.Monto);
+    string MetodoTxt(string m) => m == "YapePlin" ? "Yape / Plin" : m;
+}
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">Caja</h1>
+        <p class="page-sub">Pedidos pendientes de cobro.</p>
+    </div>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="card card-body empty-state">
+        <i class="bi bi-cash-coin"></i>
+        <p class="mb-0 mt-2">No hay pedidos pendientes.</p>
+    </div>
+}
+else
+{
+    <div class="table-wrap table-responsive">
+        <table class="table table-hover align-middle bf-expand-table">
+            <thead><tr><th style="width:48px"></th><th>Pedido</th><th>Cliente</th><th>Fecha</th><th>Modalidad</th><th>Total</th><th class="text-end">Cobro</th></tr></thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    var nombre = $"{p.Cliente?.Usuario?.Nombres} {p.Cliente?.Usuario?.Apellidos}".Trim();
+                    <tr>
+                        <td>
+                            <button type="button" class="btn-expand collapsed" data-bs-toggle="collapse" data-bs-target="#det-@p.IdPedido" aria-expanded="false" aria-label="Ver detalle del pedido @p.Codigo">
+                                <i class="bi bi-chevron-down"></i>
+                            </button>
+                        </td>
+                        <td class="fw-semibold">@p.Codigo</td>
+                        <td>@nombre</td>
+                        <td>@p.FechaPedido.ToString("dd/MM HH:mm")</td>
+                        <td>@p.Modalidad @(p.NumeroMesa.HasValue ? $"· Mesa {p.NumeroMesa}" : "")</td>
+                        <td class="fw-semibold">S/ @p.Total.ToString("0.00")</td>
+                        <td class="text-end">
+                            <button type="button" class="btn btn-sm btn-brand btn-cobrar"
+                                    data-id="@p.IdPedido" data-codigo="@p.Codigo" data-cliente="@nombre"
+                                    data-total="@p.Total.ToString("0.00", inv)">
+                                <i class="bi bi-receipt-cutoff me-1"></i>Cobrar
+                            </button>
+                        </td>
+                    </tr>
+                    <tr class="detail-row">
+                        <td colspan="7" class="p-0 border-0">
+                            <div class="collapse" id="det-@p.IdPedido">
+                                <div class="detail-box">
+                                    <div class="detail-title">Detalle del pedido</div>
+                                    @foreach (var d in p.Detalles)
+                                    {
+                                        <div class="detail-line">
+                                            <span><strong>@d.Cantidad×</strong> @d.NombreProducto</span>
+                                            <span>S/ @((d.Cantidad * d.PrecioUnitario).ToString("0.00"))</span>
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(p.Observacion))
+                                    {
+                                        <div class="detail-note"><i class="bi bi-chat-left-text me-1"></i>@p.Observacion</div>
+                                    }
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@* ===== MODAL: COBRAR Y EMITIR COMPROBANTE ===== *@
+<div class="modal fade bf-modal" id="modalCobro" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-cash-coin me-2"></i>Registrar pago y emitir comprobante</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form asp-action="Registrar" method="post" id="formCobro">
+                <div class="modal-body">
+                    <input type="hidden" name="id" id="cobroId" />
+                    <input type="hidden" name="monto" id="cobroMonto" />
+
+                    <div class="order-summary mb-3">
+                        <div>
+                            <small>Pedido a cobrar</small>
+                            <div class="fw-bold fs-5" id="cobroCodigo"></div>
+                            <span class="pill" id="cobroCliente"></span>
+                        </div>
+                        <div class="text-end">
+                            <small>Monto total</small>
+                            <div class="total-amount" id="cobroTotal"></div>
+                        </div>
+                    </div>
+
+                    <label class="form-label">Tipo de comprobante</label>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <input type="radio" class="btn-check" name="tipo" id="tipoBoleta" value="Boleta" checked>
+                            <label class="btn btn-line w-100" for="tipoBoleta"><i class="bi bi-receipt me-1"></i>Boleta</label>
+                        </div>
+                        <div class="col-6">
+                            <input type="radio" class="btn-check" name="tipo" id="tipoFactura" value="Factura">
+                            <label class="btn btn-line w-100" for="tipoFactura"><i class="bi bi-building me-1"></i>Factura</label>
+                        </div>
+                    </div>
+
+                    <div id="facturaCampos" class="row g-2 mb-3 d-none">
+                        <div class="col-5">
+                            <label class="form-label" for="cobroRuc">RUC</label>
+                            <input type="text" name="ruc" id="cobroRuc" class="form-control" maxlength="11" inputmode="numeric" placeholder="20601234567" />
+                        </div>
+                        <div class="col-7">
+                            <label class="form-label" for="cobroRazon">Razón social</label>
+                            <input type="text" name="razon" id="cobroRazon" class="form-control" maxlength="120" placeholder="Empresa S.A.C." />
+                        </div>
+                    </div>
+
+                    <label class="form-label" for="cobroMetodo">Método de pago</label>
+                    <select name="metodo" id="cobroMetodo" class="form-select">
+                        <option value="Efectivo">Efectivo en caja</option>
+                        <option value="YapePlin">Yape / Plin</option>
+                        <option value="Tarjeta">Tarjeta (POS)</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-line" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-brand"><i class="bi bi-check-circle me-1"></i>Confirmar cobro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* ===== MODAL: SIMULADOR DE COMPROBANTE (se abre solo tras cobrar) ===== *@
+<div class="modal fade bf-modal" id="modalComprobante" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-printer me-2"></i>Comprobante electrónico interno</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                @if (comp != null && comp.Pago != null)
+                {
+                    var tipo = (string)ViewBag.CompTipo;
+                    var ruc = ViewBag.CompRuc as string;
+                    var razon = ViewBag.CompRazon as string;
+                    var cli = $"{comp.Cliente?.Usuario?.Nombres} {comp.Cliente?.Usuario?.Apellidos}".Trim();
+                    var metodoTxt = comp.Pago.MetodoPago == "YapePlin" ? "Yape / Plin" : comp.Pago.MetodoPago;
+                    <div id="printableReceipt" class="receipt-paper">
+                        <div class="text-center receipt-head">
+                            <div class="fw-bold fs-5">BITEFLOW RESTAURANTE S.A.C.</div>
+                            <div class="small">RUC: 20609876543</div>
+                            <div class="small">Av. La Marina 2450 · San Miguel, Lima</div>
+                            <div class="fw-bold mt-2">@tipo.ToUpperInvariant() DE VENTA ELECTRÓNICA</div>
+                            <div class="fw-bold">@comp.Pago.NumeroComprobante</div>
+                        </div>
+                        <div class="small receipt-block">
+                            <div><strong>Fecha:</strong> @comp.Pago.FechaPago.ToString("dd/MM/yyyy HH:mm")</div>
+                            <div><strong>Pedido:</strong> @comp.Codigo (@comp.Modalidad@(comp.NumeroMesa.HasValue ? $" · Mesa {comp.NumeroMesa}" : ""))</div>
+                            <div><strong>Cliente:</strong> @(tipo == "Factura" && !string.IsNullOrWhiteSpace(razon) ? razon : cli)</div>
+                            @if (tipo == "Factura" && !string.IsNullOrWhiteSpace(ruc))
+                            {
+                                <div><strong>RUC:</strong> @ruc</div>
+                            }
+                            <div><strong>Método de pago:</strong> @metodoTxt</div>
+                        </div>
+                        <table class="table table-sm table-borderless small mb-2 receipt-table">
+                            <thead><tr><th>Cant</th><th>Descripción</th><th class="text-end">Importe</th></tr></thead>
+                            <tbody>
+                                @foreach (var d in comp.Detalles)
+                                {
+                                    <tr><td>@d.Cantidad</td><td>@d.NombreProducto</td><td class="text-end">S/ @((d.Cantidad * d.PrecioUnitario).ToString("0.00"))</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                        <div class="small receipt-totals">
+                            <div class="d-flex justify-content-between"><span>OP. GRAVADA:</span><span>S/ @comp.Subtotal.ToString("0.00")</span></div>
+                            <div class="d-flex justify-content-between"><span>IGV (18%):</span><span>S/ @comp.Igv.ToString("0.00")</span></div>
+                            <div class="d-flex justify-content-between fw-bold fs-6 mt-1"><span>TOTAL PAGADO:</span><span>S/ @comp.Total.ToString("0.00")</span></div>
+                        </div>
+                        <div class="text-center small mt-3 receipt-foot">¡Gracias por su preferencia en BiteFlow!</div>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-line" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-brand" onclick="window.print()"><i class="bi bi-printer-fill me-1"></i>Imprimir ticket</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ===== HISTORIAL DE COMPROBANTES EMITIDOS ===== *@
+<section class="mt-5">
+    <div class="page-head">
+        <div>
+            <h2 class="page-title fs-4"><i class="bi bi-file-earmark-bar-graph me-2"></i>Reporte de ventas y comprobantes emitidos</h2>
+            <p class="page-sub">Consulta histórica filtrada por fecha y método de pago.</p>
+        </div>
+        <div class="order-summary py-2">
+            <div><small>Total recaudado (filtro)</small><div class="total-amount fs-4">S/ @totalFiltro.ToString("0.00")</div></div>
+        </div>
+    </div>
+
+    <form method="get" class="card card-body mb-3">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold" for="fi">Fecha inicio</label>
+                <input type="date" id="fi" name="fi" class="form-control" value="@fIni.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold" for="ff">Fecha fin</label>
+                <input type="date" id="ff" name="ff" class="form-control" value="@fFin.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold" for="metodoF">Método de pago</label>
+                <select id="metodoF" name="metodo" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="Efectivo" selected="@(fMetodo == "Efectivo")">Efectivo</option>
+                    <option value="YapePlin" selected="@(fMetodo == "YapePlin")">Yape / Plin</option>
+                    <option value="Tarjeta" selected="@(fMetodo == "Tarjeta")">Tarjeta</option>
+                </select>
+            </div>
+            <div class="col-md-3"><button class="btn btn-brand w-100"><i class="bi bi-funnel me-1"></i>Filtrar</button></div>
+        </div>
+    </form>
+
+    @if (historial.Count == 0)
+    {
+        <div class="card card-body empty-state"><i class="bi bi-receipt"></i><p class="mb-0 mt-2">No hay comprobantes en este rango.</p></div>
+    }
+    else
+    {
+        <div class="table-wrap table-responsive">
+            <table class="table table-hover align-middle">
+                <thead><tr><th>Pedido</th><th>Comprobante</th><th>Fecha / hora</th><th>Cliente</th><th>Método</th><th>Estado</th><th>Total</th><th class="text-end">Ticket</th></tr></thead>
+                <tbody>
+                    @foreach (var h in historial)
+                    {
+                        var cliH = $"{h.Cliente?.Usuario?.Nombres} {h.Cliente?.Usuario?.Apellidos}".Trim();
+                        var ticket = JsonSerializer.Serialize(new
+                        {
+                            numero = h.Pago!.NumeroComprobante,
+                            fecha = h.Pago.FechaPago.ToString("dd/MM/yyyy HH:mm"),
+                            pedido = h.Codigo + " (" + h.Modalidad + (h.NumeroMesa.HasValue ? " · Mesa " + h.NumeroMesa : "") + ")",
+                            cliente = cliH,
+                            metodo = MetodoTxt(h.Pago.MetodoPago),
+                            items = h.Detalles.Select(d => new { c = d.Cantidad, n = d.NombreProducto, i = (d.Cantidad * d.PrecioUnitario).ToString("0.00", inv) }),
+                            subtotal = h.Subtotal.ToString("0.00", inv),
+                            igv = h.Igv.ToString("0.00", inv),
+                            total = h.Total.ToString("0.00", inv)
+                        });
+                        <tr>
+                            <td class="fw-semibold">@h.Codigo</td>
+                            <td class="fw-semibold text-primary">@h.Pago.NumeroComprobante</td>
+                            <td class="text-secondary">@h.Pago.FechaPago.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@cliH</td>
+                            <td><span class="pill">@MetodoTxt(h.Pago.MetodoPago)</span></td>
+                            <td><span class="pill pill-yes">Pagado</span></td>
+                            <td class="fw-semibold">S/ @h.Pago.Monto.ToString("0.00")</td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-line btn-ver-ticket" data-ticket="@ticket"><i class="bi bi-printer me-1"></i>Ver</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@* ===== MODAL: VER COMPROBANTE ANTERIOR ===== *@
+<div class="modal fade bf-modal" id="modalHistorial" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-printer me-2"></i>Comprobante emitido</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body"><div id="printableReceiptHist" class="receipt-paper"></div></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-line" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-brand" onclick="window.print()"><i class="bi bi-printer-fill me-1"></i>Imprimir ticket</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@media print {
+        #printableReceiptHist, #printableReceiptHist * {
+            visibility: visible;
+        }
+
+        #printableReceiptHist {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            border: none;
+        }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        (function () {
+            const modalCobro = new bootstrap.Modal(document.getElementById('modalCobro'));
+            const factura = document.getElementById('tipoFactura');
+            const boleta = document.getElementById('tipoBoleta');
+            const campos = document.getElementById('facturaCampos');
+            const ruc = document.getElementById('cobroRuc');
+            const razon = document.getElementById('cobroRazon');
+
+            function toggleFactura() {
+                const on = factura.checked;
+                campos.classList.toggle('d-none', !on);
+                ruc.required = on; razon.required = on;
+                ruc.pattern = on ? '\\d{11}' : '';
+            }
+            factura.addEventListener('change', toggleFactura);
+            boleta.addEventListener('change', toggleFactura);
+            ruc.addEventListener('input', () => { ruc.value = ruc.value.replace(/\D/g, ''); });
+
+            document.querySelectorAll('.btn-cobrar').forEach(btn => btn.addEventListener('click', () => {
+                document.getElementById('cobroId').value = btn.dataset.id;
+                document.getElementById('cobroMonto').value = btn.dataset.total;
+                document.getElementById('cobroCodigo').textContent = btn.dataset.codigo;
+                document.getElementById('cobroCliente').textContent = btn.dataset.cliente || 'Cliente';
+                document.getElementById('cobroTotal').textContent = 'S/ ' + btn.dataset.total;
+                boleta.checked = true; ruc.value = ''; razon.value = '';
+                toggleFactura();
+                modalCobro.show();
+            }));
+
+            const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            const modalHist = new bootstrap.Modal(document.getElementById('modalHistorial'));
+            document.querySelectorAll('.btn-ver-ticket').forEach(btn => btn.addEventListener('click', () => {
+                const t = JSON.parse(btn.dataset.ticket);
+                document.getElementById('printableReceiptHist').innerHTML = `
+                    <div class="text-center receipt-head">
+                        <div class="fw-bold fs-5">BITEFLOW RESTAURANTE S.A.C.</div>
+                        <div class="small">RUC: 20609876543</div>
+                        <div class="small">Av. La Marina 2450 · San Miguel, Lima</div>
+                        <div class="fw-bold mt-2">COMPROBANTE DE VENTA ELECTRÓNICA</div>
+                        <div class="fw-bold">${esc(t.numero)}</div>
+                    </div>
+                    <div class="small receipt-block">
+                        <div><strong>Fecha:</strong> ${esc(t.fecha)}</div>
+                        <div><strong>Pedido:</strong> ${esc(t.pedido)}</div>
+                        <div><strong>Cliente:</strong> ${esc(t.cliente)}</div>
+                        <div><strong>Método de pago:</strong> ${esc(t.metodo)}</div>
+                    </div>
+                    <table class="table table-sm table-borderless small mb-2 receipt-table">
+                        <thead><tr><th>Cant</th><th>Descripción</th><th class="text-end">Importe</th></tr></thead>
+                        <tbody>${t.items.map(i => `<tr><td>${i.c}</td><td>${esc(i.n)}</td><td class="text-end">S/ ${i.i}</td></tr>`).join('')}</tbody>
+                    </table>
+                    <div class="small receipt-totals">
+                        <div class="d-flex justify-content-between"><span>OP. GRAVADA:</span><span>S/ ${t.subtotal}</span></div>
+                        <div class="d-flex justify-content-between"><span>IGV (18%):</span><span>S/ ${t.igv}</span></div>
+                        <div class="d-flex justify-content-between fw-bold fs-6 mt-1"><span>TOTAL PAGADO:</span><span>S/ ${t.total}</span></div>
+                    </div>
+                    <div class="text-center small mt-3 receipt-foot">¡Gracias por su preferencia en BiteFlow!</div>`;
+                modalHist.show();
+            }));
+
+            @if (comp != null)
+            {
+                    <text>new bootstrap.Modal(document.getElementById('modalComprobante')).show();</text>
+            }
+        })();
+    </script>
+}

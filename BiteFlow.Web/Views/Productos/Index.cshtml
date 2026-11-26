@@ -1,6 +1,119 @@
 @model IReadOnlyList<Producto>
-@{ ViewData["Title"]="Productos"; }
-<div class="d-flex justify-content-between align-items-center mb-3"><div><h1 class="h3 fw-bold">Productos</h1><p class="text-secondary mb-0">Administra platos y bebidas de la carta.</p></div><a asp-action="Create" class="btn btn-warning"><i class="bi bi-plus-lg me-1"></i>Nuevo producto</a></div>
-<div class="card table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Disponible</th><th>Activo</th><th></th></tr></thead><tbody>
-@foreach(var p in Model){<tr><td>@p.Nombre</td><td>@p.Categoria?.Nombre</td><td>S/ @p.Precio.ToString("0.00")</td><td>@(p.Disponible?"Sí":"No")</td><td>@(p.Activo?"Sí":"No")</td><td><form asp-action="Eliminar" method="post"><input type="hidden" name="id" value="@p.IdProducto"/><button class="btn btn-sm btn-outline-danger" disabled="@(!p.Activo)">Desactivar</button></form></td></tr>}
-</tbody></table></div>
+@using System.Globalization
+@{
+    ViewData["Title"] = "Productos";
+    var cats = (IEnumerable<Categoria>)ViewBag.Categorias;
+    var inv = CultureInfo.InvariantCulture;
+}
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">Productos</h1>
+        <p class="page-sub">Administra platos y bebidas de la carta.</p>
+    </div>
+    <button type="button" class="btn btn-brand" id="btnNuevoProducto"><i class="bi bi-plus-lg me-1"></i>Nuevo producto</button>
+</div>
+
+<div class="table-wrap table-responsive">
+    <table class="table table-hover align-middle">
+        <thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>En carta</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+        <tbody>
+            @foreach (var p in Model)
+            {
+                <tr>
+                    <td class="fw-semibold">@p.Nombre</td>
+                    <td>@p.Categoria?.Nombre</td>
+                    <td>S/ @p.Precio.ToString("0.00")</td>
+                    <td><span class="pill @(p.Disponible ? "pill-yes" : "pill-no")">@(p.Disponible ? "Sí" : "No")</span></td>
+                    <td><span class="pill @(p.Activo ? "pill-yes" : "pill-no")">@(p.Activo ? "Activo" : "Inactivo")</span></td>
+                    <td class="text-end">
+                        <div class="d-inline-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-line btn-editar-producto"
+                                    data-id="@p.IdProducto" data-nombre="@p.Nombre" data-descripcion="@p.Descripcion"
+                                    data-precio="@p.Precio.ToString("0.00", inv)" data-categoria="@p.IdCategoria"
+                                    data-imagen="@p.ImagenUrl" data-disponible="@(p.Disponible ? "1" : "0")">
+                                <i class="bi bi-pencil-square me-1"></i>Editar
+                            </button>
+                            <form asp-action="Eliminar" method="post" class="m-0">
+                                <input type="hidden" name="id" value="@p.IdProducto" />
+                                <button class="btn btn-sm btn-line-danger" disabled="@(!p.Activo)">Desactivar</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="modal fade bf-modal" id="modalProducto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalProductoTitulo"><i class="bi bi-plus-circle me-2"></i>Nuevo producto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form asp-action="Guardar" method="post">
+                <div class="modal-body">
+                    <input type="hidden" name="IdProducto" id="pId" value="0" />
+                    <div class="mb-3">
+                        <label class="form-label" for="pNombre">Nombre</label>
+                        <input name="Nombre" id="pNombre" class="form-control" maxlength="120" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="pDescripcion">Descripción</label>
+                        <textarea name="Descripcion" id="pDescripcion" rows="2" maxlength="500" class="form-control"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" for="pPrecio">Precio (S/)</label>
+                            <input name="Precio" id="pPrecio" type="number" step="0.01" min="0.01" class="form-control" placeholder="0.00" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" for="pCategoria">Categoría</label>
+                            <select name="IdCategoria" id="pCategoria" class="form-select" required>
+                                <option value="">Seleccionar</option>
+                                @foreach (var c in cats) { <option value="@c.IdCategoria">@c.Nombre</option> }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="pImagen">URL de imagen</label>
+                        <input name="ImagenUrl" id="pImagen" class="form-control" maxlength="500" placeholder="https://..." />
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" name="Disponible" id="pDisponible" value="true" class="form-check-input" checked />
+                        <input type="hidden" name="Disponible" value="false" />
+                        <label class="form-check-label" for="pDisponible">Disponible en carta</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-line" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-brand"><i class="bi bi-check-lg me-1"></i>Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    const modal = new bootstrap.Modal(document.getElementById('modalProducto'));
+    const $ = id => document.getElementById(id);
+    function abrir(d) {
+        $('modalProductoTitulo').innerHTML = d ? '<i class="bi bi-pencil-square me-2"></i>Editar producto' : '<i class="bi bi-plus-circle me-2"></i>Nuevo producto';
+        $('pId').value = d ? d.id : 0;
+        $('pNombre').value = d ? d.nombre : '';
+        $('pDescripcion').value = d ? (d.descripcion || '') : '';
+        $('pPrecio').value = d ? d.precio : '';
+        $('pCategoria').value = d ? d.categoria : '';
+        $('pImagen').value = d ? (d.imagen || '') : '';
+        $('pDisponible').checked = d ? d.disponible === '1' : true;
+        modal.show();
+    }
+    $('btnNuevoProducto').addEventListener('click', () => abrir(null));
+    document.querySelectorAll('.btn-editar-producto').forEach(b => b.addEventListener('click', () => abrir(b.dataset)));
+})();
+</script>
+}

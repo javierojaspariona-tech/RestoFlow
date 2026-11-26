@@ -1,4 +1,84 @@
 @model IReadOnlyList<Categoria>
-@{ ViewData["Title"]="Categorías"; }
-<div class="d-flex justify-content-between align-items-center mb-3"><h1 class="h3 fw-bold">Categorías</h1><a asp-action="Create" class="btn btn-warning">Nueva categoría</a></div>
-<div class="card table-responsive"><table class="table mb-0"><thead><tr><th>Nombre</th><th>Descripción</th><th>Activo</th><th></th></tr></thead><tbody>@foreach(var c in Model){<tr><td>@c.Nombre</td><td>@c.Descripcion</td><td>@(c.Activo?"Sí":"No")</td><td><form asp-action="Eliminar" method="post"><input type="hidden" name="id" value="@c.IdCategoria"/><button class="btn btn-sm btn-outline-danger" disabled="@(!c.Activo)">Desactivar</button></form></td></tr>}</tbody></table></div>
+@{ ViewData["Title"] = "Categorías"; }
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">Categorías</h1>
+        <p class="page-sub">Agrupa los productos de la carta.</p>
+    </div>
+    <button type="button" class="btn btn-brand" id="btnNuevaCategoria"><i class="bi bi-plus-lg me-1"></i>Nueva categoría</button>
+</div>
+
+<div class="table-wrap table-responsive">
+    <table class="table table-hover align-middle">
+        <thead><tr><th>Nombre</th><th>Descripción</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+        <tbody>
+            @foreach (var c in Model)
+            {
+                <tr>
+                    <td class="fw-semibold">@c.Nombre</td>
+                    <td class="text-secondary">@c.Descripcion</td>
+                    <td><span class="pill @(c.Activo ? "pill-yes" : "pill-no")">@(c.Activo ? "Activa" : "Inactiva")</span></td>
+                    <td class="text-end">
+                        <div class="d-inline-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-line btn-editar-categoria"
+                                    data-id="@c.IdCategoria" data-nombre="@c.Nombre" data-descripcion="@c.Descripcion">
+                                <i class="bi bi-pencil-square me-1"></i>Editar
+                            </button>
+                            <form asp-action="Eliminar" method="post" class="m-0">
+                                <input type="hidden" name="id" value="@c.IdCategoria" />
+                                <button class="btn btn-sm btn-line-danger" disabled="@(!c.Activo)">Desactivar</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="modal fade bf-modal" id="modalCategoria" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCategoriaTitulo"><i class="bi bi-plus-circle me-2"></i>Nueva categoría</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form asp-action="Guardar" method="post">
+                <div class="modal-body">
+                    <input type="hidden" name="IdCategoria" id="cId" value="0" />
+                    <div class="mb-3">
+                        <label class="form-label" for="cNombre">Nombre</label>
+                        <input name="Nombre" id="cNombre" class="form-control" maxlength="80" required />
+                    </div>
+                    <div>
+                        <label class="form-label" for="cDescripcion">Descripción</label>
+                        <textarea name="Descripcion" id="cDescripcion" rows="3" maxlength="250" class="form-control"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-line" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-brand"><i class="bi bi-check-lg me-1"></i>Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    const modal = new bootstrap.Modal(document.getElementById('modalCategoria'));
+    const $ = id => document.getElementById(id);
+    function abrir(d) {
+        $('modalCategoriaTitulo').innerHTML = d ? '<i class="bi bi-pencil-square me-2"></i>Editar categoría' : '<i class="bi bi-plus-circle me-2"></i>Nueva categoría';
+        $('cId').value = d ? d.id : 0;
+        $('cNombre').value = d ? d.nombre : '';
+        $('cDescripcion').value = d ? (d.descripcion || '') : '';
+        modal.show();
+    }
+    $('btnNuevaCategoria').addEventListener('click', () => abrir(null));
+    document.querySelectorAll('.btn-editar-categoria').forEach(b => b.addEventListener('click', () => abrir(b.dataset)));
+})();
+</script>
+}
