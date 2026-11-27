@@ -64,6 +64,12 @@ a {
 .bf-nav {
     background: var(--bf-blue);
     padding: .75rem 0;
+
+    /*Barra Fija en Catalogo*/
+    position: sticky; 
+    top: 0; /* ^^^ depende de position ^^^*/
+    z-index: 1030; 
+    /* -------------------- */
 }
 
 .bf-brand {
